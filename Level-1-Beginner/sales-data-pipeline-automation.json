@@ -1,0 +1,294 @@
+{
+  "name": "n8n Text Course Level 1 - Nathan's workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "url": "https://internal.users.n8n.cloud/webhook/custom-erp",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "unique_id",
+              "value": "YOUR_UNIQUE_ID_HERE"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [256, -160],
+      "id": "a25dfab4-94f8-4e48-9399-bfa97c062124",
+      "name": "HTTP Request",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "yvCXbYLhDhQy7ZJX",
+          "name": "HTTP Request Node Credentials"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "base": {
+          "__rl": true,
+          "value": "YOUR_BASE_ID",
+          "mode": "list",
+          "cachedResultName": "n8n Text Course Level 1",
+          "cachedResultUrl": "https://airtable.com/apprgQ2WgX1cE1UXD"
+        },
+        "table": {
+          "__rl": true,
+          "value": "YOUR_TABLE_ID",
+          "mode": "list",
+          "cachedResultName": "processingOrders",
+          "cachedResultUrl": "https://airtable.com/apprgQ2WgX1cE1UXD/tbl1iDKitilSiXP1F"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "orderID",
+              "displayName": "orderID",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "employeeName",
+              "displayName": "employeeName",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [928, -256],
+      "id": "09e51cd0-3796-4e12-847c-7e3466851f8b",
+      "name": "Create a record",
+      "notesInFlow": true,
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "6zuomsJGxZ3JduXJ",
+          "name": "Airtable Access Token for n8n Text Course Level 1"
+        }
+      },
+      "notes": "this node inputs the data gotten from the HTTP request node and then filtered afterwards into an Airtable table"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "bdfe55d4-0d09-428b-a4fd-fb0d517c3708",
+              "leftValue": "={{ $json.orderStatus }}",
+              "rightValue": "processing",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {
+          "ignoreCase": true
+        }
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [480, -160],
+      "id": "beb58699-7a0e-45a5-910d-19231dfec233",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c40c4c6d-90ca-4f98-a7c7-a592fa4288cc",
+              "name": "orderID",
+              "value": "={{ $json.orderID }}",
+              "type": "number"
+            },
+            {
+              "id": "e18a0e7d-32ed-4be3-bf66-98d291d27d7a",
+              "name": "employeeName",
+              "value": "={{ $json.employeeName }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [704, -256],
+      "id": "5ba100a6-d21c-4b79-a334-e955e5945fe0",
+      "name": "Edit Fields",
+      "notesInFlow": true,
+      "notes": "for selecting specific fields from the incoming data to send to the Airtable."
+    },
+    {
+      "parameters": {
+        "jsCode": "// selecting all the incoming inputs(booked orders) and putting them in a variable 'items'. *returns an array\nlet items = $input.all(); \n// since our input from previous node(booked orders) returns an array, the length of the array is the total number of items\nlet itemsBooked = items.length;\n// creating a container for the price of all our booked orders\nlet bookedSum = 0;\n\n// iterating through wach item in our array i.e each order\nfor (let i = 0; i < items.length; i++) {\n  // selecting each item(order) using it's array index and extracting its orderPrice and adding it to our bookedSum container\n  bookedSum += items[i].json.orderPrice;\n}\n\n// returning an Array of a JSON object containing the total number of booked items(orders) and total price of all the booked orders\nreturn [{json: {itemsBooked, bookedSum} }]"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [704, -64],
+      "id": "42c2c6a1-782f-42ab-961f-7cb638ad491a",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "authentication": "webhook",
+        "content": "=This week we've {{ $json.itemsBooked }} booked orders with a total value of {{$json[\"bookedSum\"]}}. My Unique ID: {{ $('HTTP Request').params[\"headerParameters\"][\"parameters\"][0][\"value\"] }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.discord",
+      "typeVersion": 2,
+      "position": [928, -64],
+      "id": "beeaab5d-1943-4b15-884b-2fa5438ddf31",
+      "name": "Discord",
+      "webhookId": "YOUR_WEBHOOK_ID_HERE",
+      "credentials": {
+        "discordWebhookApi": {
+          "id": "h97ubvDc2Bfoefjs",
+          "name": "Discord Webhook account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "triggerAtDay": [1],
+              "triggerAtHour": 9
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [32, -160],
+      "id": "2be6d8fc-02c0-4c40-887d-7d66a5c8aac8",
+      "name": "Schedule Trigger"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Create a record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Discord",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false,
+    "timeSavedMode": "fixed",
+    "timezone": "Africa/Lagos",
+    "callerPolicy": "workflowsFromSameOwner",
+    "saveExecutionProgress": true,
+    "executionTimeout": -1
+  },
+  "versionId": "ac418670-0cee-4f93-ba96-6f38e8ca3bcf",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "e09287f05dfcc2acac125d1a452dcb0fd7da862fdaef4927c9993f42c87eff11"
+  },
+  "id": "iT2r011l9C50tbKzORR9m",
+  "tags": [
+    {
+      "updatedAt": "2026-01-30T00:33:19.364Z",
+      "createdAt": "2026-01-30T00:33:19.364Z",
+      "id": "FKkdAteVphRH5OMo",
+      "name": "Learning"
+    }
+  ]
+}
